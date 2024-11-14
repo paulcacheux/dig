@@ -24,8 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
-	"text/template"
 
 	"go.uber.org/dig/internal/dot"
 )
@@ -92,46 +90,6 @@ func updateGraph(dg *dot.Graph, err error) error {
 	return nil
 }
 
-var _graphTmpl = template.Must(
-	template.New("DotGraph").
-		Funcs(template.FuncMap{
-			"quote": strconv.Quote,
-		}).
-		Parse(`digraph {
-	rankdir=RL;
-	graph [compound=true];
-	{{range $g := .Groups}}
-		{{- quote .String}} [{{.Attributes}}];
-		{{range .Results}}
-			{{- quote $g.String}} -> {{quote .String}};
-		{{end}}
-	{{end -}}
-	{{range $index, $ctor := .Ctors}}
-		subgraph cluster_{{$index}} {
-			{{ with .Package }}label = {{ quote .}};
-			{{ end -}}
-
-			constructor_{{$index}} [shape=plaintext label={{quote .Name}}];
-			{{with .ErrorType}}color={{.Color}};{{end}}
-			{{range .Results}}
-				{{- quote .String}} [{{.Attributes}}];
-			{{end}}
-		}
-		{{range .Params}}
-			constructor_{{$index}} -> {{quote .String}} [ltail=cluster_{{$index}}{{if .Optional}} style=dashed{{end}}];
-		{{end}}
-		{{range .GroupParams}}
-			constructor_{{$index}} -> {{quote .String}} [ltail=cluster_{{$index}}];
-		{{end -}}
-	{{end}}
-	{{range .Failed.TransitiveFailures}}
-		{{- quote .String}} [color=orange];
-	{{end -}}
-	{{range .Failed.RootCauses}}
-		{{- quote .String}} [color=red];
-	{{end}}
-}`))
-
 // Visualize parses the graph in Container c into DOT format and writes it to
 // io.Writer w.
 func Visualize(c *Container, w io.Writer, opts ...VisualizeOption) error {
@@ -148,7 +106,7 @@ func Visualize(c *Container, w io.Writer, opts ...VisualizeOption) error {
 		}
 	}
 
-	return _graphTmpl.Execute(w, dg)
+	return nil
 }
 
 // CanVisualizeError returns true if the error is an errVisualizer.
